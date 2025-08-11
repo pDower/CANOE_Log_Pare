@@ -1,5 +1,4 @@
-<img width="1920" height="919" alt="image" src="https://github.com/user-attachments/assets/67298777-8a6d-48d3-abde-74ff9802a359" /># CANOE_Log_Pare
-我的CANOE太贵，没有CANOE的时候怎么方便查看CANOE日志，使用这个软件，类似CANOE Trace窗口功能软件，可以解析CANOE日志，查看和过滤，导出等功能。
+CANOE太贵，没有CANOE的时候怎么方便查看CANOE日志，使用这个软件，类似CANOE Trace窗口功能软件，可以解析CANOE日志，查看和过滤，导出等功能。
 # CANOE日志解析工具更新说明
 
 ## 版本更新 v1.1 (2025-05-14)
@@ -33,7 +32,6 @@
 - ✅ 添加颜色编码区分不同类型消息
 
 ### 技术改进
-
 #### 数据结构优化
 ```javascript
 // 新增报文序号字段
@@ -46,7 +44,6 @@
 ```
 
 
-```
 
 ### 新增功能
 
@@ -80,8 +77,11 @@ CANOE_Log_Pare/
 ```
 
 ## Display （展示）
+
 中文
 <img width="1920" height="919" alt="image" src="https://github.com/user-attachments/assets/0f547aa8-c911-4604-8219-d9f090250133" />
+
 Englise
+
 <img width="1920" height="919" alt="image" src="https://github.com/user-attachments/assets/ba72f040-8c16-4009-9667-c20f9125adcc" />
 
