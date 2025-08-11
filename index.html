@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CANOE日志解析工具 - 增强版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header-center {
+            flex: 1;
+            text-align: center;
+            margin: 0 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-title h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-title p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            text-align: right;
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        
+        .language-switcher {
+            margin-bottom: 10px;
+        }
+        
+        .language-switcher select {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        
+        .language-switcher select option {
+            background: #333;
+            color: white;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        /* 左侧过滤面板 */
+        .filters-panel {
+            width: 250px;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .filters-panel h3 {
+            margin-bottom: 12px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95em;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        /* 紧凑型过滤条件样式 */
+        .filter-group-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .filter-group-compact label {
+            font-size: 0.8em;
+            color: #555;
+            font-weight: 500;
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+
+        .filter-group-compact select,
+        .filter-group-compact input {
+            flex: 1;
+            padding: 4px 6px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.75em;
+        }
+
+        /* 原有的过滤条件样式保持不变 */
+        .filter-group label {
+            font-size: 0.8em;
+            color: #555;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 6px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .filter-group input:focus, .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 6px rgba(102, 126, 234, 0.3);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            flex-direction: column;
+        }
+
+        .filter-btn {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8em;
+            justify-content: center;
+        }
+
+        .filter-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .filter-btn.clear {
+            background: #e74c3c;
+        }
+
+        .filter-btn.clear:hover {
+            background: #c0392b;
+        }
+
+        /* 多条件过滤样式 */
+        .multiple-filters-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .multiple-filters-section h4 {
+            margin-bottom: 10px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9em;
+        }
+
+        .multiple-filters-container {
+            margin-bottom: 10px;
+        }
+
+        .filter-condition {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .filter-condition select {
+            flex: 1;
+            padding: 4px 6px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .filter-condition input {
+            flex: 2;
+            padding: 4px 6px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .filter-condition .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 6px;
+            cursor: pointer;
+            font-size: 0.7em;
+            transition: background 0.3s;
+        }
+
+        .filter-condition .remove-btn:hover {
+            background: #c82333;
+        }
+
+        .multiple-filters-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .add-filter-btn, .clear-all-filters-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .add-filter-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .add-filter-btn:hover {
+            background: #218838;
+        }
+
+        .clear-all-filters-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .clear-all-filters-btn:hover {
+            background: #5a6268;
+        }
+
+        .preset-filters {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #ddd;
+        }
+
+        .preset-filters h4 {
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.8em;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            background: #6c757d;
+            color: white;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        /* 模块样式 */
+        .operation-module,
+        .export-module,
+        .stats-module {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 6px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        
+        .file-module {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(238, 90, 36, 0.2) 100%);
+            border-radius: 8px;
+            padding: 6px 10px;
+            border: 2px solid rgba(255, 107, 107, 0.4);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.2);
+        }
+        
+        .module-title {
+            font-size: 0.65em;
+            color: #fff;
+            margin-bottom: 4px;
+            text-align: center;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+        
+        .operation-buttons,
+        .export-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        
+        .stats-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .operation-buttons .control-btn,
+        .operation-buttons .trace-fold-btn,
+        .export-buttons .control-btn {
+            padding: 3px 6px;
+            font-size: 0.7em;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .operation-buttons .control-btn:hover,
+        .operation-buttons .trace-fold-btn:hover,
+        .export-buttons .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .file-module .file-upload-section {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        
+        .file-module .upload-btn,
+        .file-module .clear-file-btn {
+            padding: 3px 6px;
+            font-size: 0.7em;
+            border-radius: 4px;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.3) 0%, rgba(238, 90, 36, 0.3) 100%);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            color: white;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .file-module .upload-btn:hover,
+        .file-module .clear-file-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.4) 0%, rgba(238, 90, 36, 0.4) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .table-header h3 {
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 文件上传和统计信息 */
+        .file-upload-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 8px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .upload-btn:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #d63031 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .upload-btn:active {
+            transform: translateY(0) scale(1.02);
+        }
+
+        .compact-stats {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .compact-stat {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 6px;
+            font-size: 0.65em;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            min-width: 35px;
+        }
+
+        .compact-stat .value {
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .compact-stat .label {
+            font-size: 0.55em;
+            opacity: 0.8;
+        }
+        
+        .stats-btn {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            padding: 4px 6px !important;
+        }
+        
+        .stats-btn:hover {
+            background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%) !important;
+            transform: translateY(-1px);
+        }
+
+        .table-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.85em;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.8em;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 为不同类型的按钮添加特殊样式 */
+        .control-btn[title*="统计"] {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn[title*="统计"]:hover {
+            background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+            transform: translateY(-1px);
+        }
+
+        .control-btn[title*="刷新"] {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn[title*="刷新"]:hover {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            transform: translateY(-1px);
+        }
+
+        .control-btn[title*="导出"] {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn[title*="导出"]:hover {
+            background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+            transform: translateY(-1px);
+        }
+
+        .control-btn[title*="时间"] {
+            background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn[title*="时间"]:hover {
+            background: linear-gradient(135deg, #8e24aa 0%, #5e35b1 100%);
+            transform: translateY(-1px);
+        }
+
+        .control-btn[title*="时间"].active {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 600px;
+            position: relative;
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            min-width: 1400px;
+            table-layout: fixed;
+        }
+
+        .log-table th {
+            background: #e9ecef;
+            color: #495057;
+            font-weight: bold;
+            padding: 12px 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid #dee2e6;
+            cursor: pointer;
+            transition: background 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 可调整列宽样式 */
+        .log-table th.resizable {
+            cursor: col-resize;
+        }
+
+        .log-table th.resizable::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: transparent;
+            cursor: col-resize;
+        }
+
+        .log-table th.resizable:hover::after {
+            background: #007bff;
+        }
+
+        .log-table th.resizing::after {
+            background: #007bff;
+        }
+
+        .log-table th:hover {
+            background: #dee2e6;
+        }
+
+        .log-table th.sorted {
+            background: #667eea;
+            color: white;
+        }
+
+        /* 列宽默认设置 */
+        .col-index { width: 60px; }
+        .col-timestamp { width: 120px; }
+        .col-protocol { width: 80px; }
+        .col-channel { width: 70px; }
+        .col-direction { width: 80px; }
+        .col-message-id { width: 80px; }
+        .col-fdf { width: 50px; }
+        .col-brs { width: 50px; }
+        .col-esi { width: 50px; }
+        .col-dlc { width: 50px; }
+        .col-data { width: 200px; }
+        .col-ascii { width: 150px; }
+        .col-bus-load { width: 80px; }
+        .col-error-count { width: 80px; }
+        .col-timing { width: 100px; }
+        .col-crc { width: 100px; }
+        .col-other { width: 120px; min-width: 80px; }
+
+        /* 清除文件按钮样式 */
+        .clear-file-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 8px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 10px;
+        }
+
+        .clear-file-btn:hover {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        /* 确认对话框样式 */
+        .confirm-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .confirm-dialog.show {
+            display: flex;
+        }
+
+        .confirm-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .confirm-content h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .confirm-content p {
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .confirm-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .confirm-btn.confirm {
+            background: #dc3545;
+            color: white;
+        }
+
+        .confirm-btn.confirm:hover {
+            background: #c82333;
+        }
+
+        .confirm-btn.cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .confirm-btn.cancel:hover {
+            background: #5a6268;
+        }
+
+        .trace-controls {
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .trace-controls th {
+            background: #f8f9fa !important;
+            color: #495057 !important;
+            text-align: right;
+            padding: 8px;
+            cursor: default;
+            position: sticky;
+            top: 48px;
+            z-index: 9;
+        }
+
+        .trace-controls th:hover {
+            background: #f8f9fa !important;
+        }
+
+        .trace-fold-btn {
+            background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+            color: white;
+            padding: 8px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .trace-fold-btn:hover {
+            background: linear-gradient(135deg, #8e24aa 0%, #5e35b1 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+        }
+
+        .trace-fold-btn.active {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            transform: scale(1.02);
+        }
+
+        .trace-status {
+            margin-left: 10px;
+            color: #6c757d;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .log-table td {
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+            word-break: break-all;
+        }
+
+        .log-table tr:hover {
+            background-color: #f8f9fa;
+            transition: all 0.2s;
+        }
+
+        .log-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .log-table tr:nth-child(even):hover {
+            background-color: #e9ecef;
+        }
+
+        .timestamp {
+            font-family: 'Courier New', monospace;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .protocol {
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .direction-tx {
+            background: #007bff;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .direction-rx {
+            background: #6f42c1;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .error-frame {
+            background: #dc3545;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .message-id {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .data-payload {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .ascii-data {
+            font-family: 'Courier New', monospace;
+            background: #e3f2fd;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 10px;
+            border: 1px solid #bbdefb;
+            color: #1976d2;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-info {
+            background: #ffc107;
+            color: #212529;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+        }
+
+        /* 错误类型高亮 */
+        .error-vt {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+
+        .error-crc {
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+
+        .error-timeout {
+            background: #d1ecf1;
+            border-left: 3px solid #17a2b8;
+        }
+
+        .error-bus {
+            background: #e2e3e5;
+            border-left: 3px solid #6c757d;
+        }
+
+        .system-message {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+
+        .status-message {
+            background: #d1ecf1;
+            border-left: 3px solid #17a2b8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .export-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .export-btn.secondary {
+            background: #6c757d;
+        }
+
+        .export-btn.secondary:hover {
+            background: #5a6268;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            font-size: 0.9em;
+            margin-top: 40px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            height: 300px;
+        }
+
+        .selected-file-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            margin: 10px 0;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .selected-file-display:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .filters-panel {
+                width: 100%;
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .file-upload-section {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .compact-stats {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .table-wrapper {
+                max-height: 400px;
+                overflow-x: auto;
+                overflow-y: auto;
+            }
+            
+            .log-table {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-title">
+                    <h1><i class="fas fa-chart-line"></i> CANOE日志解析工具 - 增强版</h1>
+                    <p>专业的CANOE ASC日志解析工具，提供强大的过滤、分析和导出功能</p>
+                </div>
+            </div>
+            <div class="header-center">
+                <div id="selectedFileName" class="selected-file-display">
+                    <!-- 选中的文件名将在这里显示 -->
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="language-switcher">
+                    <select id="languageSelect" onchange="changeLanguage(this.value)">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
+                    </select>
+                </div>
+                <p>作者: luotongde | 时间: 2025-05-14</p>
+                <p>版本: v1.0 增强版</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 左侧过滤面板 -->
+        <div class="filters-panel">
+            <h3><i class="fas fa-filter"></i> 过滤条件</h3>
+            <div class="filter-group-compact">
+                <label for="protocolFilter">协议类型:</label>
+                <select id="protocolFilter">
+                    <option value="">全部</option>
+                    <option value="CAN">CAN</option>
+                    <option value="CANFD">CANFD</option>
+                </select>
+            </div>
+            <div class="filter-group-compact">
+                <label for="channelFilter">通道号:</label>
+                <select id="channelFilter">
+                    <option value="">全部</option>
+                </select>
+            </div>
+            <div class="filter-group-compact">
+                <label for="directionFilter">传输方向:</label>
+                <select id="directionFilter">
+                    <option value="">全部</option>
+                    <option value="Tx">发送(Tx)</option>
+                    <option value="Rx">接收(Rx)</option>
+                </select>
+            </div>
+            <div class="filter-group-compact">
+                <label for="messageIdFilter">报文ID:</label>
+                <input type="text" id="messageIdFilter" placeholder="例如: 8f, 551">
+            </div>
+            <div class="filter-group-compact">
+                <label for="timeStartFilter">开始时间:</label>
+                <input type="number" id="timeStartFilter" placeholder="秒" step="0.001">
+            </div>
+            <div class="filter-group-compact">
+                <label for="timeEndFilter">结束时间:</label>
+                <input type="number" id="timeEndFilter" placeholder="秒" step="0.001">
+            </div>
+            <div class="filter-group">
+                <label for="dataFilter">数据内容</label>
+                <input type="text" id="dataFilter" placeholder="关键词搜索 (如: SV: 1 0 1 ::VTS::VT7001_)">
+                <small style="font-size: 0.7em; color: #666; margin-top: 2px; display: block;">
+                    包含模式: 直接输入关键词<br>
+                    排除模式: 在关键词前加 ! (如: !SV: 或 !VT7001_)<br>
+                    系统变量: 使用 "SV:" 而不是 "系统变量"<br>
+                    <strong>状态消息过滤:</strong> 使用 "Status:" 过滤状态信息 (如: Status:chip status error active)
+                </small>
+            </div>
+            <div class="filter-group-compact">
+                <label for="errorFilter">错误类型:</label>
+                <select id="errorFilter">
+                    <option value="">全部</option>
+                    <option value="error">错误帧</option>
+                    <option value="normal">正常帧</option>
+                    <option value="vt_error">VT信息错误</option>
+                    <option value="crc_error">CRC校验错误</option>
+                    <option value="timeout_error">超时错误</option>
+                    <option value="bus_error">总线错误</option>
+                </select>
+            </div>
+            <div class="filter-group-compact">
+                <label for="systemMessageFilter">系统消息类型:</label>
+                <select id="systemMessageFilter">
+                    <option value="">全部</option>
+                    <option value="status">状态信息</option>
+                    <option value="error">错误信息</option>
+                    <option value="warning">警告信息</option>
+                    <option value="info">一般信息</option>
+                </select>
+            </div>
+
+            <!-- 多条件过滤 (AND逻辑) -->
+            <div class="multiple-filters-section">
+                <h4><i class="fas fa-layer-group"></i> 多条件过滤 (AND逻辑)</h4>
+                <div class="multiple-filters-container" id="multipleFiltersContainer">
+                    <!-- 动态添加的过滤条件将在这里显示 -->
+                </div>
+                <div class="multiple-filters-controls">
+                    <button class="add-filter-btn" onclick="addFilterCondition()">
+                        <i class="fas fa-plus"></i> 添加过滤条件
+                    </button>
+                    <button class="clear-all-filters-btn" onclick="clearAllMultipleFilters()">
+                        <i class="fas fa-trash"></i> 清除所有
+                    </button>
+                </div>
+                <small style="font-size: 0.7em; color: #666; margin-top: 8px; display: block;">
+                    多个条件之间使用AND逻辑，所有条件都必须满足<br>
+                    支持包含(!)和排除(!)模式，例如: !系统变量, VT7001_
+                </small>
+            </div>
+
+            <div class="filter-buttons">
+                <button class="filter-btn" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> 应用过滤
+                </button>
+                <button class="filter-btn clear" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> 清除过滤
+                </button>
+            </div>
+
+            <div class="preset-filters">
+                <h4><i class="fas fa-bookmark"></i> 预设过滤</h4>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="applyPreset('canfdOnly')">仅CANFD</button>
+                    <button class="preset-btn" onclick="applyPreset('txOnly')">仅发送</button>
+                    <button class="preset-btn" onclick="applyPreset('rxOnly')">仅接收</button>
+                    <button class="preset-btn" onclick="applyPreset('errorFramesOnly')">错误帧</button>
+                    <button class="preset-btn" onclick="applyPreset('specificIds')">关键ID</button>
+                                            <button class="preset-btn" onclick="applyPreset('vt7001Include')">包含VT7001</button>
+                        <button class="preset-btn" onclick="applyPreset('vt7001Exclude')">排除VT7001</button>
+                        <button class="preset-btn" onclick="applyPreset('excludeSystemVariables')">排除系统变量</button>
+                        <button class="preset-btn" onclick="applyPreset('excludeSystemVariablesCN')">排除系统变量(中文)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3><i class="fas fa-table"></i> 日志数据</h3>
+                    
+                    <!-- 文件操作模块 -->
+                    <div class="file-module">
+                        <div class="module-title">文件模块</div>
+                        <div class="file-upload-section">
+                            <input type="file" id="fileInput" class="file-input" accept=".asc">
+                            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i> 选择文件
+                            </button>
+                            <button class="clear-file-btn" onclick="showClearFileConfirm()">
+                                <i class="fas fa-trash"></i> 清除文件
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 操作模块 -->
+                    <div class="operation-module">
+                        <div class="module-title">操作模块</div>
+                        <div class="operation-buttons">
+                            <button class="control-btn" onclick="toggleTimeDisplay()" title="切换时间显示模式">
+                                <i class="fas fa-clock"></i> 切换时间模式
+                            </button>
+                            <button class="trace-fold-btn" onclick="toggleTraceFolding()" title="CANOE Trace折叠 - 只显示每个CAN ID的最新数据">
+                                <i class="fas fa-compress-alt"></i> 折叠数据
+                            </button>
+                            <button class="control-btn" onclick="refreshData()" title="刷新数据">
+                                <i class="fas fa-sync-alt"></i> 刷新数据
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 导出模块 -->
+                    <div class="export-module">
+                        <div class="module-title">导出模块</div>
+                        <div class="export-buttons">
+                            <button class="control-btn" onclick="exportToCSV()" title="导出为CSV">
+                                <i class="fas fa-file-csv"></i> 导出CSV
+                            </button>
+                            <button class="control-btn" onclick="exportToJSON()" title="导出为JSON">
+                                <i class="fas fa-file-code"></i> 导出JSON
+                            </button>
+                            <button class="control-btn" onclick="exportFilteredData()" title="导出过滤数据">
+                                <i class="fas fa-filter"></i> 导出过滤
+                            </button>
+                            <button class="control-btn" onclick="exportStatistics()" title="导出统计报告">
+                                <i class="fas fa-chart-bar"></i> 导出统计
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 统计模块 -->
+                    <div class="stats-module">
+                        <div class="module-title">统计模块</div>
+                        <div class="stats-content">
+                            <div class="compact-stats">
+                                <div class="compact-stat">
+                                    <div class="value" id="totalMessages">0</div>
+                                    <div class="label">总报文</div>
+                                </div>
+                                <div class="compact-stat">
+                                    <div class="value" id="canMessages">0</div>
+                                    <div class="label">CAN</div>
+                                </div>
+                                <div class="compact-stat">
+                                    <div class="value" id="canfdMessages">0</div>
+                                    <div class="label">CANFD</div>
+                                </div>
+                                <div class="compact-stat">
+                                    <div class="value" id="errorFrames">0</div>
+                                    <div class="label">错误帧</div>
+                                </div>
+                                <div class="compact-stat">
+                                    <div class="value" id="totalCount">0</div>
+                                    <div class="label">总记录数</div>
+                                </div>
+                                <div class="compact-stat">
+                                    <div class="value" id="filteredCount">0</div>
+                                    <div class="label">显示记录数</div>
+                                </div>
+                            </div>
+                            <button class="control-btn stats-btn" onclick="showStatistics()" title="显示统计图表">
+                                <i class="fas fa-chart-pie"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table class="log-table" id="logTable">
+                        <thead>
+                            <tr>
+                                <th class="resizable col-index" onclick="sortTable(0)">序号 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-timestamp" onclick="sortTable(1)">时间戳 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-protocol" onclick="sortTable(2)">协议类型 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-channel" onclick="sortTable(3)">通道号 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-direction" onclick="sortTable(4)">传输方向 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-message-id" onclick="sortTable(5)">报文ID <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-fdf" onclick="sortTable(6)">FDF <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-brs" onclick="sortTable(7)">BRS <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-esi" onclick="sortTable(8)">ESI <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-dlc" onclick="sortTable(9)">DLC <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-data" onclick="sortTable(10)">数据段 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-ascii" onclick="sortTable(11)">ASCII数据 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-bus-load" onclick="sortTable(12)">总线负载 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-error-count" onclick="sortTable(13)">错误计数 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-timing" onclick="sortTable(14)">时间同步 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-crc" onclick="sortTable(15)">CRC校验 <i class="fas fa-sort"></i></th>
+                                <th class="resizable col-other" onclick="sortTable(16)">其他信息 <i class="fas fa-sort"></i></th>
+                            </tr>
+
+                        </thead>
+                        <tbody id="logTableBody">
+                            <tr>
+                                <td colspan="17" class="no-data">
+                                    <i class="fas fa-file-upload" style="font-size: 3em; color: #ccc; margin-bottom: 10px;"></i>
+                                    <br>请选择日志文件开始解析
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计图表模态框 -->
+    <div id="statisticsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-chart-pie"></i> 统计图表</h3>
+                <span class="close" onclick="closeModal('statisticsModal')">&times;</span>
+            </div>
+            <div class="chart-container" id="chartContainer">
+                <!-- 图表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 清除文件确认对话框 -->
+    <div id="clearFileConfirm" class="confirm-dialog">
+        <div class="confirm-content">
+            <h3><i class="fas fa-exclamation-triangle"></i> 确认清除文件</h3>
+            <p>您确定要清除当前加载的文件吗？<br>此操作将清空所有已解析的数据。</p>
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm" onclick="clearLoadedFile()">确认清除</button>
+                <button class="confirm-btn cancel" onclick="hideClearFileConfirm()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>CANOE日志解析工具 v1.0 增强版 | 作者: luotongde | 时间: 2025-05-14</p>
+        <p>支持CAN/CANFD协议日志解析，提供强大的过滤、分析和导出功能</p>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="parser.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
